@@ -12,6 +12,7 @@ export default function createPersistor (store, config) {
   const transforms = config.transforms || []
   const debounce = config.debounce || false
   const keyPrefix = config.keyPrefix !== undefined ? config.keyPrefix : KEY_PREFIX
+  const onSetError = config.onSetError !== undefined ? config.onSetError : null
 
   // pluggable state shape (e.g. immutablejs)
   const stateInit = config._stateInit || {}
@@ -55,7 +56,9 @@ export default function createPersistor (store, config) {
         let key = storesToProcess[0]
         let storageKey = createStorageKey(key)
         let endState = transforms.reduce((subState, transformer) => transformer.in(subState, key), stateGetter(store.getState(), key))
-        if (typeof endState !== 'undefined') storage.setItem(storageKey, serializer(endState), warnIfSetError(key))
+        // use provided error callback or default
+        let errorCb = onSetError !== null ? onSetError : warnIfSetError(key)
+        if (typeof endState !== 'undefined') storage.setItem(storageKey, serializer(endState), errorCb)
         storesToProcess.shift()
       }, debounce)
     }
